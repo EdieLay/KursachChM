@@ -83,19 +83,23 @@ void write_u_to_file()
     
 }
 
+// колебание струны на отрезке
+// l - права граница отрезка (и его длина)
+// left_odd - зафиксирована ли левая точка в нуле (т.е. слева нечетное отражение)
+// right_odd - зафикирована ли правая точка в нуле (т.е. справа нечетное отражение)
 double u_finite(double x, double t, double l, bool left_odd, bool right_odd)
 {
     double xt1 = x - a * t;
-    int part1 = 0;
+    int part1 = 0; // часть, в которую попала точка xt1 (рисунок в папке "Курсач ЧМы")
     if (xt1 < 0)
     {
-        while (xt1 < 0)
+        while (xt1 < 0) // приводим точку к начальнмоу отрезку
         {
             xt1 += l;
             part1++;
         }
 
-        if (part1 % 2 == 1) xt1 = l - xt1;
+        if (part1 % 2 == 1) xt1 = l - xt1; // в зависимости от кол-ва отражений точку надо будет ещё раз отразить
     }
 
     double xt2 = x + a * t;
@@ -112,8 +116,8 @@ double u_finite(double x, double t, double l, bool left_odd, bool right_odd)
     }
 
     double phi1 = Phi(xt1);
-    switch(part1 % 4)
-    {
+    switch(part1 % 4) // отражения повторяются с циклом 4 (в 4 части в любом случае все точки принимают изначальный вид)
+    { // отражаем относительно Ox в зависимости от части и четности отражений
     case 0:
         break;
     case 1:
@@ -148,6 +152,13 @@ double u_finite(double x, double t, double l, bool left_odd, bool right_odd)
     }
 
     double psi1 = 0;
+    // мы берем интеграл от отрицательной точки до нуля
+    // проходимся отдельно по каждой части
+    // в первую итерацию цикла мы берём интеграл от xt1 до l, где 0 <= xt1 < l
+    // поэтому мы должны предусмотреть, в какой части это происходит, чтобы не взять больше или меньше, чем нужно
+    // в последующие итерации мы всегда берём от 0 до l, 
+    // поэтому присваивания xt1 и становление его то нижним, то верхним пределом - не имеет значения
+    // просто это написано в общем виде
     while (part1 > 0)
     {
         switch (part1 % 4)
@@ -178,6 +189,8 @@ double u_finite(double x, double t, double l, bool left_odd, bool right_odd)
     }
 
     double psi2 = 0;
+    // то же самое, что и для xt1
+    // только теперь мы берем интеграл от l до большего числа
     while (part2 > 0)
     {
         switch (part2 % 4)
@@ -207,12 +220,15 @@ double u_finite(double x, double t, double l, bool left_odd, bool right_odd)
         part2--;
     }
 
+    // берем интеграл от начального отрезка, учитывая что xt1 мог стать нулём, если изначально он был меньше нуля
+    // а xt2 мог стать l, если изначально он был больше l
     double psi_part = (psi1 + integrate_psi(xt1, xt2) + psi2) / (2 * a);
 
     double phi_part = (phi1 + phi2) / 2;
     return phi_part + psi_part;
 }
 
+// колебание струны на луче
 double u_half_finite(double x, double t, bool left_odd)
 {
     double xt1 = x - a * t;
@@ -221,6 +237,7 @@ double u_half_finite(double x, double t, bool left_odd)
     double phi1 = Phi(xt1);
     double phi2 = Phi(xt2);
     double psi_part = 0;
+    // по сути то же самое, что и для отрезка, только теперь есть всего одно отражение
     if (xt1 < 0)
     {
         phi1 = Phi(-xt1);
@@ -243,6 +260,7 @@ double u_half_finite(double x, double t, bool left_odd)
     return phi_part + psi_part;
 }
 
+// колебание струны на прямой
 double u(double x, double t)
 {
     if (t < 0) throw invalid_argument("Time variable t can't be negative");
