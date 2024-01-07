@@ -17,6 +17,7 @@ double Psi(double x);
 double integrate_psi(double lower, double upper);
 double integrate_Simpson(double lower, double upper, double (*f)(double));
 double u(double x, double t);
+double u_half_finite(double x, double t, bool left_odd);
 double u_finite(double x, double t, double l, bool left_odd, bool right_odd);
 void write_u_to_file();
 
@@ -31,7 +32,7 @@ double (*phi[n_phi + 1])(double) = {    [](double x) { return 0.0; },
 const int n_psi = 2;
 double restr_psi[n_psi] = { 1, 3 };
 double (*psi[n_psi + 1])(double) = {    [](double x) { return 0.0; },
-                                        [](double x) { return 0.0; },
+                                        [](double x) { return 1.0; },
                                         [](double x) { return 0.0; } };
 int main()
 {
@@ -48,8 +49,8 @@ int main()
 void write_u_to_file()
 {
     double x0 = 0;
-    double xn = 4;
-    int num_of_x = 400;
+    double xn = 5;
+    int num_of_x = 500;
     double delta_x = (xn - x0) / num_of_x;
     double tn = 10;
     int num_of_t = 80;
@@ -73,7 +74,7 @@ void write_u_to_file()
         {
             for (double x = x0; x <= xn; x += delta_x)
             {
-                out << u_finite(x, t, xn, true, true) << " ";
+                out << u_half_finite(x, t, true) << " ";
             }
             out << endl;
         }
@@ -209,6 +210,36 @@ double u_finite(double x, double t, double l, bool left_odd, bool right_odd)
     double psi_part = (psi1 + integrate_psi(xt1, xt2) + psi2) / (2 * a);
 
     double phi_part = (phi1 + phi2) / 2;
+    return phi_part + psi_part;
+}
+
+double u_half_finite(double x, double t, bool left_odd)
+{
+    double xt1 = x - a * t;
+    double xt2 = x + a * t;
+
+    double phi1 = Phi(xt1);
+    double phi2 = Phi(xt2);
+    double psi_part = 0;
+    if (xt1 < 0)
+    {
+        phi1 = Phi(-xt1);
+        if (left_odd)
+        {
+            phi1 *= -1;
+            psi_part -= integrate_psi(0, xt1);
+        }
+        else
+        {
+            psi_part += integrate_psi(0, xt1);
+        }
+        xt1 = 0;
+    }
+    psi_part += integrate_psi(xt1, xt2);
+    psi_part /= (2 * a);
+
+    double phi_part = (phi1 + phi2) / 2;
+
     return phi_part + psi_part;
 }
 
