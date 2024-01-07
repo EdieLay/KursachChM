@@ -1,5 +1,9 @@
 ﻿#include <iostream>
 #include <fstream>
+#include <vector>
+#include <functional>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 #define SIMPSON_SECTIONS 20
 
@@ -13,22 +17,21 @@ double Psi(double x);
 double integrate_psi(double lower, double upper);
 double integrate_Simpson(double lower, double upper, double (*f)(double));
 double u(double x, double t);
+double u_finite(double x, double t, double l, bool left_odd, bool right_odd);
 void write_u_to_file();
 
 double const a = 1.0; // коэффициент а в формуле Даламбера
-const int n_phi = 5;
-double restr_phi[n_phi] = { 1, 2, 3, 5, 7 }; // restrictions (ограничения в кусочно заданной функции)
+const int n_phi = 3;
+double restr_phi[n_phi] = { 1, 2, 3 }; // restrictions (ограничения в кусочно заданной функции)
 double (*phi[n_phi + 1])(double) = {    [](double x) { return 0.0; },
-                                        [](double x) { return x - 1; },
-                                        [](double x) { return -x + 3; },
-                                        [](double x) { return 1.5*x - 4.5; },
-                                        [](double x) { return -1.5*x + 10.5; },
+                                        [](double x) { return sin(M_PI / 2 * (x - 1)); }, // sin(M_PI / 2 * (x - 1))
+                                        [](double x) { return sin(M_PI / 2 * (x - 1)); },
                                         [](double x) { return 0.0; } };
 
 const int n_psi = 2;
 double restr_psi[n_psi] = { 1, 3 };
 double (*psi[n_psi + 1])(double) = {    [](double x) { return 0.0; },
-                                        [](double x) { return 1.0; },
+                                        [](double x) { return 0.0; },
                                         [](double x) { return 0.0; } };
 int main()
 {
@@ -44,11 +47,11 @@ int main()
 
 void write_u_to_file()
 {
-    double x0 = -3;
-    double xn = 11;
-    int num_of_x = 560;
+    double x0 = 0;
+    double xn = 4;
+    int num_of_x = 400;
     double delta_x = (xn - x0) / num_of_x;
-    double tn = 5;
+    double tn = 10;
     int num_of_t = 80;
     double delta_t = tn / num_of_t;
     ofstream out;
@@ -70,13 +73,143 @@ void write_u_to_file()
         {
             for (double x = x0; x <= xn; x += delta_x)
             {
-                out << u(x, t) << " ";
+                out << u_finite(x, t, xn, true, true) << " ";
             }
             out << endl;
         }
     }
     else cout << "File not opened" << endl;
     
+}
+
+double u_finite(double x, double t, double l, bool left_odd, bool right_odd)
+{
+    double xt1 = x - a * t;
+    int part1 = 0;
+    if (xt1 < 0)
+    {
+        while (xt1 < 0)
+        {
+            xt1 += l;
+            part1++;
+        }
+
+        if (part1 % 2 == 1) xt1 = l - xt1;
+    }
+
+    double xt2 = x + a * t;
+    int part2 = 0;
+    if (xt2 > l)
+    {
+        while (xt2 > l)
+        {
+            xt2 -= l;
+            part2++;
+        }
+
+        if (part2 % 2 == 1) xt2 = l - xt2;
+    }
+
+    double phi1 = Phi(xt1);
+    switch(part1 % 4)
+    {
+    case 0:
+        break;
+    case 1:
+        if (left_odd) phi1 *= -1;
+        break;
+    case 2:
+        if (left_odd != right_odd) phi1 *= -1;
+        break;
+    case 3:
+        if (right_odd) phi1 *= -1;
+        break;
+    default:
+        break;
+    }
+
+    double phi2 = Phi(xt2);
+    switch (part2 % 4)
+    {
+    case 0:
+        break;
+    case 1:
+        if (right_odd) phi2 *= -1;
+        break;
+    case 2:
+        if (left_odd != right_odd) phi2 *= -1;
+        break;
+    case 3:
+        if (left_odd) phi2 *= -1;
+        break;
+    default:
+        break;
+    }
+
+    double psi1 = 0;
+    while (part1 > 0)
+    {
+        switch (part1 % 4)
+        {
+        case 0:
+            psi1 += integrate_psi(xt1, l);
+            xt1 = l;
+            break;
+        case 1:
+            if (left_odd) psi1 -= integrate_psi(0, xt1);
+            else psi1 += integrate_psi(0, xt1);
+            xt1 = 0;
+            break;
+        case 2:
+            if (left_odd != right_odd) psi1 -= integrate_psi(xt1, l);
+            else psi1 += integrate_psi(xt1, l);
+            xt1 = l;
+            break;
+        case 3:
+            if (right_odd) psi1 -= integrate_psi(0, xt1);
+            else psi1 += integrate_psi(0, xt1);
+            xt1 = 0;
+            break;
+        default:
+            break;
+        }
+        part1--;
+    }
+
+    double psi2 = 0;
+    while (part2 > 0)
+    {
+        switch (part2 % 4)
+        {
+        case 0:
+            psi2 += integrate_psi(0, xt2);
+            xt2 = 0;
+            break;
+        case 1:
+            if (right_odd) psi2 -= integrate_psi(xt2, l);
+            else psi2 += integrate_psi(xt2, l);
+            xt2 = l;
+            break;
+        case 2:
+            if (left_odd != right_odd) psi2 -= integrate_psi(0, xt2);
+            else psi2 += integrate_psi(0, xt2);
+            xt2 = 0;
+            break;
+        case 3:
+            if (left_odd) psi2 -= integrate_psi(xt2, l);
+            else psi2 += integrate_psi(xt2, l);
+            xt2 = l;
+            break;
+        default:
+            break;
+        }
+        part2--;
+    }
+
+    double psi_part = (psi1 + integrate_psi(xt1, xt2) + psi2) / (2 * a);
+
+    double phi_part = (phi1 + phi2) / 2;
+    return phi_part + psi_part;
 }
 
 double u(double x, double t)
