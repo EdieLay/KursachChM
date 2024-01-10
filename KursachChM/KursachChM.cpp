@@ -5,7 +5,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-#define SIMPSON_SECTIONS 20
+#define SIMPSON_SECTIONS 2 * 10
 
 using namespace std;
 
@@ -25,14 +25,14 @@ double const a = 1.0; // коэффициент а в формуле Далам�
 const int n_phi = 3;
 double restr_phi[n_phi] = { 1, 2, 3 }; // restrictions (ограничения в кусочно заданной функции)
 double (*phi[n_phi + 1])(double) = {    [](double x) { return 0.0; },
-                                        [](double x) { return sin(M_PI / 2 * (x - 1)); }, // sin(M_PI / 2 * (x - 1))
-                                        [](double x) { return sin(M_PI / 2 * (x - 1)); },
+                                        [](double x) { return x - 1; }, // sin(M_PI / 2 * (x - 1))
+                                        [](double x) { return -x + 3; },
                                         [](double x) { return 0.0; } };
 
 const int n_psi = 2;
 double restr_psi[n_psi] = { 1, 3 };
 double (*psi[n_psi + 1])(double) = {    [](double x) { return 0.0; },
-                                        [](double x) { return 1.0; },
+                                        [](double x) { return 0.0; },
                                         [](double x) { return 0.0; } };
 int main()
 {
@@ -50,10 +50,10 @@ void write_u_to_file()
 {
     double x0 = 0;
     double xn = 5;
-    int num_of_x = 500;
+    int num_of_x = 100 * (int)xn;
     double delta_x = (xn - x0) / num_of_x;
-    double tn = 10;
-    int num_of_t = 80;
+    double tn = 6;
+    int num_of_t = 10 * (int)tn;
     double delta_t = tn / num_of_t;
     ofstream out;
     out.open("points.txt");
@@ -74,7 +74,7 @@ void write_u_to_file()
         {
             for (double x = x0; x <= xn; x += delta_x)
             {
-                out << u_half_finite(x, t, true) << " ";
+                out << u_finite(x, t, xn, false, true) << " ";
             }
             out << endl;
         }
@@ -93,7 +93,7 @@ double u_finite(double x, double t, double l, bool left_odd, bool right_odd)
     int part1 = 0; // часть, в которую попала точка xt1 (рисунок в папке "Курсач ЧМы")
     if (xt1 < 0)
     {
-        while (xt1 < 0) // приводим точку к начальнмоу отрезку
+        while (xt1 < 0) // приводим точку к начальному отрезку
         {
             xt1 += l;
             part1++;
@@ -151,7 +151,6 @@ double u_finite(double x, double t, double l, bool left_odd, bool right_odd)
         break;
     }
 
-    double psi1 = 0;
     // мы берем интеграл от отрицательной точки до нуля
     // проходимся отдельно по каждой части
     // в первую итерацию цикла мы берём интеграл от xt1 до l, где 0 <= xt1 < l
@@ -159,6 +158,7 @@ double u_finite(double x, double t, double l, bool left_odd, bool right_odd)
     // в последующие итерации мы всегда берём от 0 до l, 
     // поэтому присваивания xt1 и становление его то нижним, то верхним пределом - не имеет значения
     // просто это написано в общем виде
+    double psi1 = 0;
     while (part1 > 0)
     {
         switch (part1 % 4)
@@ -277,10 +277,8 @@ double Phi(double x)
 {
     int i = 0;
     for (i = 0; i < n_phi; i++)
-    {
         if (x < restr_phi[i])
             break;
-    }
     return phi[i](x);
 }
 
@@ -288,10 +286,8 @@ double Psi(double x)
 {
     int i = 0;
     for (i = 0; i < n_psi; i++)
-    {
         if (x < restr_psi[i])
             break;
-    }
     return psi[i](x);
 }
 
@@ -326,7 +322,7 @@ double integrate_Simpson(double lower, double upper, double (*f)(double))
         double xi = lower + i * h;
         res += (2 * (i % 2) + 2) * f(xi); // коэффициент в формуле (4 при нечётном i и 2 при чётном)
     }
-    res += f(upper);
+    res += f(upper); // последний член формулы Симпсона
 
     res *= h / 3.0;
     return res;
