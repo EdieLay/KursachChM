@@ -244,11 +244,11 @@ double u_half_finite(double x, double t, bool left_odd)
         if (left_odd)
         {
             phi1 *= -1;
-            psi_part -= integrate_psi(0, xt1);
+            psi_part -= integrate_psi(0, -xt1);
         }
         else
         {
-            psi_part += integrate_psi(0, xt1);
+            psi_part += integrate_psi(0, -xt1);
         }
         xt1 = 0;
     }
