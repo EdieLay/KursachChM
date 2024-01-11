@@ -22,12 +22,14 @@ double u_finite(double x, double t, double l, bool left_odd, bool right_odd);
 void write_u_to_file();
 
 double const a = 1.0; // коэффициент а в формуле Даламбера
-const int n_phi = 3;
-double restr_phi[n_phi] = { 1, 2, 3 }; // restrictions (ограничения в кусочно заданной функции)
-double (*phi[n_phi + 1])(double) = {    [](double x) { return 0.0; },
-                                        [](double x) { return x - 1; }, // sin(M_PI / 2 * (x - 1))
-                                        [](double x) { return -x + 3; },
+const int n_phi = 4;
+double restr_phi[n_phi] = { 1, 3, 6, 9 }; // restrictions (ограничения в кусочно заданной функции)
+double (*phi[n_phi + 1])(double) = { [](double x) { return 0.0; },
+                                        [](double x) { return sin(M_PI / 2 * (x - 1)); }, // sin(M_PI / 2 * (x - 1))
+                                        [](double x) { return 0.0; },
+                                        [](double x) { return -2 * sin(M_PI / 3 * (x - 6)); },
                                         [](double x) { return 0.0; } };
+
 
 const int n_psi = 2;
 double restr_psi[n_psi] = { 1, 3 };
