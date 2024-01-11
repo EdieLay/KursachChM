@@ -51,10 +51,10 @@ int main()
 void write_u_to_file()
 {
     double x0 = 0;
-    double xn = 5;
+    double xn = 10;
     int num_of_x = 100 * (int)xn;
     double delta_x = (xn - x0) / num_of_x;
-    double tn = 6;
+    double tn = 20;
     int num_of_t = 10 * (int)tn;
     double delta_t = tn / num_of_t;
     ofstream out;
@@ -76,7 +76,7 @@ void write_u_to_file()
         {
             for (double x = x0; x <= xn; x += delta_x)
             {
-                out << u_finite(x, t, xn, false, true) << " ";
+                out << u_finite(x, t, xn, true, true) << " ";
             }
             out << endl;
         }
